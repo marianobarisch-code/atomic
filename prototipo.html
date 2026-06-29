@@ -31,9 +31,8 @@
 
   /* ---------- Header ---------- */
   .top{display:flex; align-items:center; gap:12px; margin-bottom:22px}
-  .logo{width:38px; height:38px; border-radius:11px; background:var(--grad);
-    display:grid; place-items:center; flex:none; box-shadow:0 6px 18px #7c5cff44}
-  .logo svg{width:22px; height:22px}
+  .logo{width:40px; height:40px; border-radius:12px; overflow:hidden; flex:none; box-shadow:0 6px 18px #3a8dff55}
+  .logo svg{width:100%; height:100%; display:block}
   .brand{font-size:21px; font-weight:800; letter-spacing:-.5px}
   .brand span{background:var(--grad); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent}
   .sub{font-size:12.5px; color:var(--muted); margin-top:-2px}
@@ -83,9 +82,15 @@
     border-radius:var(--rs); padding:13px 14px; margin-bottom:10px}
   .task .grip{color:var(--muted2); display:flex; flex-direction:column; gap:2px; touch-action:none; cursor:grab}
   .task .grip span{width:15px;height:2px;background:currentColor;border-radius:2px;display:block}
-  .task .idx{width:24px;height:24px;border-radius:50%;background:var(--bg2);color:var(--accent2);
+  .task .idx{width:26px;height:26px;border-radius:50%;background:var(--bg2);color:var(--accent2);
     font-size:12px;font-weight:700;display:grid;place-items:center;flex:none}
-  .task .nm{flex:1; font-size:15.5px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .task .idx.emoji{background:transparent; font-size:20px}
+  .task .tmid{flex:1; min-width:0; overflow:hidden}
+  .task .nm{font-size:15.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .task .hint{font-size:11.5px; font-weight:600; margin-top:3px; display:flex; align-items:center; gap:5px; color:var(--muted)}
+  .task .hint svg{width:12px; height:12px; flex:none}
+  .task .hint.slow{color:var(--red)} .task .hint.fast{color:var(--green)} .task .hint.even{color:var(--muted)}
+  .task .hint .adj{color:var(--accent2); text-decoration:underline}
   .task .dur{font-size:13.5px; color:var(--muted); font-variant-numeric:tabular-nums; font-weight:600; flex:none}
   .task .del{color:var(--muted2); padding:4px; flex:none}
   .task .del svg{width:16px;height:16px;display:block}
@@ -120,6 +125,7 @@
   .prog .seg i{display:block; height:100%; width:0; background:var(--grad); border-radius:3px}
   .prog .seg.done i{width:100% !important}
 
+  .runner .mid{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center}
   /* lista vertical de pasos */
   .rlist{flex:1; overflow-y:auto; margin:8px -4px 0; -webkit-overflow-scrolling:touch}
   .rlist-in{min-height:100%; display:flex; flex-direction:column; gap:9px; justify-content:center; padding:10px 4px}
@@ -134,6 +140,7 @@
   .step.done .pt{color:var(--muted2)}
 
   .step.next{background:var(--card); border:1px solid var(--line); color:var(--muted)}
+  .step .semoji{font-size:18px; width:22px; text-align:center; flex:none}
   .step.next .dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--muted2);flex:none}
   .step.next .pt{color:var(--muted2)}
   .step.next.far{opacity:.5}
@@ -142,6 +149,7 @@
     padding:20px 18px 22px; border-radius:22px;
     background:linear-gradient(165deg,#26214f,#191726); border:1px solid #4a3fa0; box-shadow:0 14px 44px #7c5cff3a}
   .nowlab{font-size:11.5px; letter-spacing:2.5px; text-transform:uppercase; color:var(--accent2); font-weight:800; margin-bottom:6px}
+  .nowicon{font-size:34px; line-height:1; margin-bottom:6px}
   .nownm{font-size:24px; font-weight:800; letter-spacing:-.4px; line-height:1.2; margin-bottom:18px}
   .dial{position:relative; width:168px; height:168px; margin:0 auto 16px}
   .dial .time{position:absolute; inset:0; display:flex; align-items:center; justify-content:center}
@@ -192,6 +200,12 @@
   .field input[type=text]{width:100%; background:var(--card); border:1px solid var(--line); color:var(--txt);
     font-size:16px; padding:14px; border-radius:var(--rs); outline:none}
   .field input[type=text]:focus{border-color:var(--accent)}
+  .emoji-pick{display:flex; flex-direction:column; gap:11px}
+  .emoji-in{width:64px; text-align:center; font-size:24px; background:var(--card); border:1px solid var(--line); color:var(--txt); padding:8px 0; border-radius:var(--rs); outline:none}
+  .emoji-in:focus{border-color:var(--accent)}
+  .emoji-sug{display:flex; flex-wrap:wrap; gap:8px}
+  .emoji-sug button{font-size:21px; width:44px; height:44px; background:var(--card); border:1px solid var(--line); border-radius:12px; display:grid; place-items:center}
+  .emoji-sug button.on{border-color:var(--accent); background:#7c5cff22}
   .dur-row{display:flex; gap:12px}
   .dur-row .col{flex:1}
   .stepper{display:flex; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:var(--rs); overflow:hidden}
@@ -216,24 +230,49 @@
 <script>
 /* ============================ ATOMIC · MVP rutinas ============================ */
 const $ = (s,r=document)=>r.querySelector(s);
-const LS='atomic_routines_v1';
+const LS='atomic_routines_v2';
+const LS_STATS='atomic_stats_v1';
 const uid=()=> 'r'+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-3);
 
 /* ---------- estado ---------- */
 let state = load();
 function load(){
   try{ const d=JSON.parse(localStorage.getItem(LS)); if(Array.isArray(d)) return {routines:d}; }catch(e){}
-  // seed de ejemplo la primera vez
-  return {routines:[{
-    id:uid(), name:'Rutina de la mañana',
+  // rutina inicial de Mariano (arranca en la ducha; el "10 min en la cama" no se trackea porque el celular no está en la mesa de luz)
+  const seed=[{
+    id:'morning', name:'Rutina de la mañana ☀️',
     tasks:[
-      {id:uid(), name:'Lavarme los dientes', sec:5*60},
-      {id:uid(), name:'Bañarme', sec:10*60},
-      {id:uid(), name:'Desayunar', sec:15*60},
+      {id:'m-shower', name:'Shower',                     sec:10*60, icon:'🚿'},
+      {id:'m-dress',  name:'Get dressed',                sec:10*60, icon:'👕'},
+      {id:'m-water',  name:'Water + limón + creatina',   sec:5*60,  icon:'🍋'},
+      {id:'m-medit',  name:'Meditación en el balcón',    sec:10*60, icon:'🧘'},
+      {id:'m-mobil',  name:'Mobility en el balcón',      sec:10*60, icon:'🤸'},
+      {id:'m-coffee', name:'Prepare coffee',             sec:5*60,  icon:'☕'},
+      {id:'m-grat',   name:'Gratitude — Notion journal', sec:5*60,  icon:'📓'},
+      {id:'m-desk',   name:'Desk — plan day',            sec:10*60, icon:'🗒️'},
+      {id:'m-buffer', name:'Buffer libre',               sec:5*60,  icon:'🎧'},
     ]
-  }]};
+  }];
+  localStorage.setItem(LS, JSON.stringify(seed));
+  return {routines:seed};
 }
 function save(){ localStorage.setItem(LS, JSON.stringify(state.routines)); }
+
+/* ---------- aprendizaje: tiempos reales por paso ---------- */
+function loadStats(){ try{ return JSON.parse(localStorage.getItem(LS_STATS))||{}; }catch(e){ return {}; } }
+function saveStats(s){ localStorage.setItem(LS_STATS, JSON.stringify(s)); }
+function recordStep(task, actualSec){
+  if(!task) return;
+  actualSec=Math.max(0, Math.round(actualSec));
+  const s=loadStats(); const e=s[task.id]||(s[task.id]={samples:[]});
+  e.samples.push(actualSec); if(e.samples.length>8) e.samples.shift();
+  saveStats(s);
+}
+// promedio real del paso (en seg) si hay al menos 2 corridas; si no, null
+function statAvg(taskId){
+  const e=loadStats()[taskId]; if(!e||e.samples.length<2) return null;
+  return Math.round(e.samples.reduce((a,b)=>a+b,0)/e.samples.length);
+}
 
 /* ---------- navegación ---------- */
 let view={name:'home'};       // {name:'home'} | {name:'edit', id}
@@ -265,6 +304,28 @@ const ICON={
 };
 const svg=(name,cls='')=> '<svg class="'+cls+'" viewBox="0 0 24 24">'+ICON[name]+'</svg>';
 const esc=s=> String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const tIcon=t=> (t&&t.icon)?t.icon:'';
+
+// logo: recreación de la nebulosa azul (SVG self-contained, anda offline)
+function nebulaSVG(){return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="nbBg" cx="50%" cy="44%" r="72%"><stop offset="0" stop-color="#0b1738"/><stop offset="1" stop-color="#04050d"/></radialGradient>
+    <radialGradient id="nbCore" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#eafcff"/><stop offset="34%" stop-color="#67d4ff"/><stop offset="72%" stop-color="#3a6dff" stop-opacity=".55"/><stop offset="100%" stop-color="#3a6dff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="nbGlow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#7cf0ff" stop-opacity=".85"/><stop offset="100%" stop-color="#7cf0ff" stop-opacity="0"/></radialGradient>
+    <filter id="nbB" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1"/></filter>
+  </defs>
+  <rect width="48" height="48" rx="12" fill="url(#nbBg)"/>
+  <g filter="url(#nbB)">
+    <ellipse cx="24" cy="23" rx="18" ry="14" fill="url(#nbGlow)" opacity=".45"/>
+    <path d="M24 9c8.2 0 15 6 15 14 0 6.2-5 11-12 11-5.2 0-9-3.3-9-7.6 0-3.2 2.2-5.4 5.2-5.4 2.2 0 3.6 1.2 3.6 3" fill="none" stroke="#67d4ff" stroke-width="2.3" stroke-linecap="round" opacity=".6"/>
+    <path d="M24 39c-8.2 0-15-6-15-14 0-5 3.8-9 8.8-9.4" fill="none" stroke="#3a8dff" stroke-width="1.9" stroke-linecap="round" opacity=".5"/>
+  </g>
+  <ellipse cx="24" cy="23" rx="9" ry="8" fill="url(#nbCore)"/>
+  <g fill="#eaffff">
+    <circle cx="10" cy="12" r=".7"/><circle cx="39" cy="14" r=".8"/><circle cx="13" cy="36" r=".7"/><circle cx="37" cy="35" r=".6"/>
+    <circle cx="31" cy="8" r=".5"/><circle cx="8" cy="26" r=".5"/><circle cx="42" cy="27" r=".6"/><circle cx="20" cy="40" r=".5"/>
+  </g>
+</svg>`;}
 
 /* ============================ RENDER ============================ */
 function render(){
@@ -291,7 +352,7 @@ function renderHome(){
 
   $('#app').innerHTML = `
     <div class="top">
-      <div class="logo">${svg('bolt')}</div>
+      <div class="logo">${nebulaSVG()}</div>
       <div><div class="brand">Atomic</div><div class="sub">Tus rutinas, paso a paso</div></div>
     </div>
     <div class="section-h"><h2>RUTINAS</h2></div>
@@ -302,14 +363,25 @@ function renderHome(){
 function renderEdit(){
   const rt=state.routines.find(r=>r.id===view.id); if(!rt){ view={name:'home'}; return render(); }
   const tot=totalSec(rt), n=rt.tasks.length;
-  const tasks = rt.tasks.map((t,i)=>`
-    <div class="task" draggable="true" data-tid="${t.id}" data-i="${i}">
+  const tasks = rt.tasks.map((t,i)=>{
+    const av=statAvg(t.id); let hint='';
+    if(av!=null){
+      const d=av-t.sec, cls=Math.abs(d)<20?'even':(d>0?'slow':'fast');
+      const lab=Math.abs(d)<20 ? `Tu promedio real: ${fmt(av)}`
+        : (d>0 ? `Sueles tardar ${fmt(av)} · +${fmtLong(d)}` : `Sueles tardar ${fmt(av)} · −${fmtLong(-d)}`);
+      const adj=Math.abs(d)>=20 ? ` · <span class="adj" data-action="adjust-task" data-tid="${t.id}">ajustar</span>` : '';
+      hint=`<div class="hint ${cls}">${svg('clock')}<span>${lab}${adj}</span></div>`;
+    }
+    return `<div class="task" draggable="true" data-tid="${t.id}" data-i="${i}">
       <div class="grip" data-grip><span></span><span></span><span></span></div>
-      <div class="idx">${i+1}</div>
-      <div class="nm" data-action="edit-task" data-tid="${t.id}">${esc(t.name)||'Sin nombre'}</div>
+      <div class="idx ${tIcon(t)?'emoji':''}">${tIcon(t)||(i+1)}</div>
+      <div class="tmid" data-action="edit-task" data-tid="${t.id}">
+        <div class="nm">${esc(t.name)||'Sin nombre'}</div>${hint}
+      </div>
       <div class="dur" data-action="edit-task" data-tid="${t.id}">${fmt(t.sec)}</div>
       <button class="del" data-action="del-task" data-tid="${t.id}">${svg('trash')}</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   $('#app').innerHTML = `
     <button class="backbtn" data-action="home">${svg('back')} Rutinas</button>
@@ -360,6 +432,15 @@ function openTaskSheet(rtId, tid){
       <input type="text" id="tname" placeholder="Ej: Lavarme los dientes" value="${t?esc(t.name):''}" autocomplete="off">
     </div>
     <div class="field">
+      <label>Ícono (emoji)</label>
+      <div class="emoji-pick">
+        <input type="text" id="ticon" class="emoji-in" value="${t&&t.icon?esc(t.icon):''}" maxlength="2" placeholder="🙂">
+        <div class="emoji-sug">
+          ${['🚿','👕','🪥','🍋','💧','🧘','🤸','🏃','💪','☕','🍳','📓','🗒️','📱','🧴','💊','🛏️','🎧','📖','🌅'].map(e=>`<button data-emoji="${e}" ${t&&t.icon===e?'class="on"':''}>${e}</button>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="field">
       <label>Duración</label>
       <div class="dur-row">
         <div class="col"><div class="stepper">
@@ -381,11 +462,12 @@ function openTaskSheet(rtId, tid){
 function commitTask(){
   const rt=state.routines.find(r=>r.id===editingTask.rtId);
   const name=$('#tname').value.trim();
+  const icon=($('#ticon').value||'').trim();
   let m=parseInt($('#tmin').value)||0, s=parseInt($('#tsec').value)||0;
   let sec=m*60+s; if(sec<5) sec=5; // mínimo 5s
   if(!name){ $('#tname').focus(); return; }
-  if(editingTask.tid){ const t=rt.tasks.find(x=>x.id===editingTask.tid); t.name=name; t.sec=sec; }
-  else rt.tasks.push({id:uid(), name, sec});
+  if(editingTask.tid){ const t=rt.tasks.find(x=>x.id===editingTask.tid); t.name=name; t.sec=sec; t.icon=icon; }
+  else rt.tasks.push({id:uid(), name, sec, icon});
   save(); closeSheet(); render();
 }
 
@@ -418,8 +500,11 @@ function commitOpenPause(){
 }
 function nextTask(){
   const rt=run.rt; commitOpenPause();
+  const cur=rt.tasks[run.i];
+  // tiempo activo real en este paso (remaining sólo baja mientras corre, no en pausa)
+  recordStep(cur, cur.sec - run.remaining);
   // sumamos al "planeado" la duración completa del paso que cerramos
-  run.plannedDone += rt.tasks[run.i].sec;
+  run.plannedDone += cur.sec;
   if(run.i >= rt.tasks.length-1){ finishRun(); return; }
   run.i++; run.remaining=rt.tasks[run.i].sec; run.beeped=false; run.stepPausedTotal=0; run.last=Date.now();
   drawRunner();
@@ -467,10 +552,11 @@ function drawRunner(){
   let items='';
   rt.tasks.forEach((t,k)=>{
     if(k<i){
-      items+=`<div class="step done"><span class="tick">${svg('check')}</span><span class="nm">${esc(t.name)}</span><span class="pt">${fmt(t.sec)}</span></div>`;
+      items+=`<div class="step done"><span class="tick">${svg('check')}</span>${tIcon(t)?`<span class="semoji">${tIcon(t)}</span>`:''}<span class="nm">${esc(t.name)}</span><span class="pt">${fmt(t.sec)}</span></div>`;
     } else if(k===i){
       items+=`<div class="step now" id="nowcard">
         <div class="nowlab">Ahora</div>
+        ${tIcon(t)?`<div class="nowicon">${tIcon(t)}</div>`:''}
         <div class="nownm">${esc(t.name)}</div>
         <div class="dial">
           <svg width="168" height="168" viewBox="0 0 168 168">
@@ -486,7 +572,7 @@ function drawRunner(){
         <div class="paused hide" id="paused"></div>
       </div>`;
     } else if(k===i+1 || k===i+2){
-      items+=`<div class="step next ${k===i+2?'far':''}"><span class="dot"></span><span class="nm">${esc(t.name)}</span><span class="pt">${fmt(t.sec)}</span></div>`;
+      items+=`<div class="step next ${k===i+2?'far':''}">${tIcon(t)?`<span class="semoji">${tIcon(t)}</span>`:`<span class="dot"></span>`}<span class="nm">${esc(t.name)}</span><span class="pt">${fmt(t.sec)}</span></div>`;
     }
   });
   $('#overlay').innerHTML = `<div class="runner">
@@ -562,6 +648,10 @@ document.addEventListener('click', e=>{
   const quickBtn=e.target.closest('[data-quick]');
   if(quickBtn){ $('#tmin').value=quickBtn.dataset.quick; $('#tsec').value=0;
     document.querySelectorAll('.quick button').forEach(b=>b.classList.toggle('on', b===quickBtn)); return; }
+  // sugerencias de emoji
+  const emojiBtn=e.target.closest('[data-emoji]');
+  if(emojiBtn){ const ti=$('#ticon'); if(ti){ ti.value=emojiBtn.dataset.emoji;
+    document.querySelectorAll('.emoji-sug button').forEach(b=>b.classList.toggle('on', b===emojiBtn)); } return; }
   const el=e.target.closest('[data-action]'); if(!el) return;
   const a=el.dataset.action, id=el.dataset.id, tid=el.dataset.tid;
   switch(a){
@@ -572,6 +662,8 @@ document.addEventListener('click', e=>{
     case 'edit-task': openTaskSheet(view.id, tid); break;
     case 'save-task': commitTask(); break;
     case 'del-task':{ const rt=state.routines.find(r=>r.id===view.id); rt.tasks=rt.tasks.filter(t=>t.id!==tid); save(); render(); break; }
+    case 'adjust-task':{ const rt=state.routines.find(r=>r.id===view.id); const t=rt.tasks.find(x=>x.id===tid); const av=statAvg(tid);
+      if(t&&av!=null){ t.sec=Math.max(5, Math.round(av/5)*5); save(); render(); } break; }
     case 'del-task-modal':{ const rt=state.routines.find(r=>r.id===editingTask.rtId); rt.tasks=rt.tasks.filter(t=>t.id!==editingTask.tid); save(); closeSheet(); render(); break; }
     case 'start': if(!el.classList.contains('dis')) startRun(id); break;
     case 'run-pause': togglePause(); break;
@@ -590,6 +682,11 @@ function stepDur(code){
   if(code==='s+5') sec.value=((parseInt(sec.value)||0)+5)%60;
   document.querySelectorAll('.quick button').forEach(b=>b.classList.remove('on'));
 }
+
+// favicon + ícono iOS = la nebulosa (data URI, sin archivos externos)
+(function(){ const href='data:image/svg+xml;utf8,'+encodeURIComponent(nebulaSVG());
+  [['icon'],['apple-touch-icon']].forEach(([rel])=>{ const l=document.createElement('link'); l.rel=rel; l.href=href; document.head.appendChild(l); });
+})();
 
 render();
 </script>
