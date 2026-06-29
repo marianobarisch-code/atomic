@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0e0e14">
+<title>Atomic · Rutinas</title>
+<style>
+  :root{
+    --bg:#0e0e14; --bg2:#16161f; --card:#1c1c28; --card2:#23233040;
+    --line:#2c2c3a; --txt:#f2f2f7; --muted:#9a9ab0; --muted2:#6c6c82;
+    --accent:#7c5cff; --accent2:#a78bff; --grad:linear-gradient(135deg,#7c5cff,#5cc8ff);
+    --green:#36d399; --red:#ff5c7c; --amber:#ffb454;
+    --r:18px; --rs:12px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; touch-action:manipulation;
+    min-height:100vh; min-height:100dvh;
+  }
+  .app{max-width:480px; margin:0 auto; min-height:100dvh; position:relative;
+    padding:0 18px calc(120px + env(safe-area-inset-bottom));
+    padding-top:calc(14px + env(safe-area-inset-top));}
+  button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit}
+  [data-action]{cursor:pointer}
+  input{font-family:inherit}
+  .hide{display:none !important}
+
+  /* ---------- Header ---------- */
+  .top{display:flex; align-items:center; gap:12px; margin-bottom:22px}
+  .logo{width:38px; height:38px; border-radius:11px; background:var(--grad);
+    display:grid; place-items:center; flex:none; box-shadow:0 6px 18px #7c5cff44}
+  .logo svg{width:22px; height:22px}
+  .brand{font-size:21px; font-weight:800; letter-spacing:-.5px}
+  .brand span{background:var(--grad); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent}
+  .sub{font-size:12.5px; color:var(--muted); margin-top:-2px}
+  .top .grow{flex:1}
+
+  /* ---------- Routine cards ---------- */
+  .section-h{display:flex; align-items:center; justify-content:space-between; margin:6px 2px 14px}
+  .section-h h2{font-size:15px; font-weight:700; color:var(--muted); margin:0; letter-spacing:.2px}
+  .rcard{background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+    padding:16px 16px 14px; margin-bottom:13px; position:relative; overflow:hidden}
+  .rcard .bar{position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--grad)}
+  .rcard h3{margin:0 0 4px; font-size:18px; font-weight:700; letter-spacing:-.3px; padding-right:30px}
+  .rcard .meta{font-size:13px; color:var(--muted); display:flex; gap:14px; flex-wrap:wrap}
+  .rcard .meta span{display:inline-flex; align-items:center; gap:5px}
+  .rcard .meta svg{width:14px; height:14px}
+  .rcard .meta b{color:var(--accent2); font-weight:600}
+  .rcard .go{position:absolute; right:14px; top:50%; transform:translateY(-50%);
+    width:42px; height:42px; border-radius:50%; background:var(--grad); display:grid; place-items:center;
+    box-shadow:0 6px 16px #7c5cff55}
+  .rcard .go svg{width:18px; height:18px; margin-left:2px}
+  .rcard.empty-mini{padding-right:16px}
+
+  .empty{text-align:center; padding:46px 20px; color:var(--muted)}
+  .empty .ico{width:70px;height:70px;border-radius:20px;background:var(--bg2);display:grid;place-items:center;margin:0 auto 16px;border:1px solid var(--line)}
+  .empty .ico svg{width:32px;height:32px;opacity:.7}
+  .empty h3{color:var(--txt); margin:0 0 6px; font-size:17px}
+  .empty p{margin:0; font-size:14px; line-height:1.5}
+
+  /* ---------- Floating add ---------- */
+  .fab{position:fixed; left:50%; transform:translateX(-50%);
+    bottom:calc(22px + env(safe-area-inset-bottom)); z-index:30;
+    background:var(--grad); color:#fff; font-weight:700; font-size:15.5px;
+    padding:15px 26px; border-radius:30px; box-shadow:0 10px 30px #7c5cff66;
+    display:flex; align-items:center; gap:9px; width:calc(100% - 36px); max-width:444px; justify-content:center}
+  .fab svg{width:19px;height:19px}
+
+  /* ---------- Editor ---------- */
+  .backbtn{display:flex; align-items:center; gap:7px; color:var(--muted); font-size:14.5px; font-weight:600; margin-bottom:16px}
+  .backbtn svg{width:16px;height:16px}
+  .titlein{width:100%; background:transparent; border:none; color:var(--txt);
+    font-size:25px; font-weight:800; letter-spacing:-.5px; padding:2px 2px 10px; outline:none}
+  .titlein::placeholder{color:var(--muted2)}
+  .editmeta{font-size:13px; color:var(--muted); margin:0 2px 20px; display:flex; gap:14px}
+  .editmeta b{color:var(--accent2); font-weight:600}
+
+  .task{display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line);
+    border-radius:var(--rs); padding:13px 14px; margin-bottom:10px}
+  .task .grip{color:var(--muted2); display:flex; flex-direction:column; gap:2px; touch-action:none; cursor:grab}
+  .task .grip span{width:15px;height:2px;background:currentColor;border-radius:2px;display:block}
+  .task .idx{width:24px;height:24px;border-radius:50%;background:var(--bg2);color:var(--accent2);
+    font-size:12px;font-weight:700;display:grid;place-items:center;flex:none}
+  .task .nm{flex:1; font-size:15.5px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .task .dur{font-size:13.5px; color:var(--muted); font-variant-numeric:tabular-nums; font-weight:600; flex:none}
+  .task .del{color:var(--muted2); padding:4px; flex:none}
+  .task .del svg{width:16px;height:16px;display:block}
+  .task.dragging{opacity:.5}
+  .task.dragover{border-color:var(--accent)}
+
+  .addtask{display:flex; align-items:center; gap:10px; width:100%;
+    border:1.5px dashed var(--line); border-radius:var(--rs); padding:14px;
+    color:var(--muted); font-size:15px; font-weight:600; margin-top:2px; justify-content:center}
+  .addtask svg{width:18px;height:18px}
+
+  .runbar{position:fixed; left:50%; transform:translateX(-50%);
+    bottom:calc(22px + env(safe-area-inset-bottom)); z-index:30; width:calc(100% - 36px); max-width:444px;
+    display:flex; gap:10px}
+  .runbar .start{flex:1; background:var(--grad); color:#fff; font-weight:800; font-size:16px;
+    padding:16px; border-radius:30px; box-shadow:0 10px 30px #7c5cff66; display:flex; align-items:center; justify-content:center; gap:9px}
+  .runbar .start svg{width:18px;height:18px}
+  .runbar .start.dis{opacity:.4; filter:grayscale(.5)}
+
+  /* ---------- Runner (full screen) ---------- */
+  .runner{position:fixed; inset:0; z-index:60; background:var(--bg);
+    display:flex; flex-direction:column; padding:calc(18px + env(safe-area-inset-top)) 22px calc(26px + env(safe-area-inset-bottom));
+    max-width:480px; margin:0 auto;}
+  .runner .rhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px}
+  .runner .rhead .x{width:38px;height:38px;border-radius:50%;background:var(--card);display:grid;place-items:center}
+  .runner .rhead .x svg{width:16px;height:16px}
+  .runner .rname{flex:1; text-align:center; font-size:13px; color:var(--muted); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 8px}
+  .runner .stepof{font-size:13px; color:var(--muted); font-weight:600; font-variant-numeric:tabular-nums}
+
+  .prog{display:flex; gap:5px; margin:14px 0 8px}
+  .prog .seg{height:5px; flex:1; background:var(--line); border-radius:3px; overflow:hidden}
+  .prog .seg i{display:block; height:100%; width:0; background:var(--grad); border-radius:3px}
+  .prog .seg.done i{width:100% !important}
+
+  /* lista vertical de pasos */
+  .rlist{flex:1; overflow-y:auto; margin:8px -4px 0; -webkit-overflow-scrolling:touch}
+  .rlist-in{min-height:100%; display:flex; flex-direction:column; gap:9px; justify-content:center; padding:10px 4px}
+  .step{display:flex; align-items:center; gap:12px; padding:13px 15px; border-radius:14px}
+  .step .nm{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; font-size:15.5px}
+  .step .pt{font-variant-numeric:tabular-nums; font-size:13px; flex:none}
+
+  .step.done{color:var(--muted2)}
+  .step.done .tick{width:22px;height:22px;border-radius:50%;background:#36d39922;display:grid;place-items:center;flex:none}
+  .step.done .tick svg{width:13px;height:13px;color:var(--green)}
+  .step.done .nm{font-weight:500; text-decoration:line-through; text-decoration-color:#ffffff22}
+  .step.done .pt{color:var(--muted2)}
+
+  .step.next{background:var(--card); border:1px solid var(--line); color:var(--muted)}
+  .step.next .dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--muted2);flex:none}
+  .step.next .pt{color:var(--muted2)}
+  .step.next.far{opacity:.5}
+
+  .step.now{flex-direction:column; align-items:stretch; text-align:center; gap:0;
+    padding:20px 18px 22px; border-radius:22px;
+    background:linear-gradient(165deg,#26214f,#191726); border:1px solid #4a3fa0; box-shadow:0 14px 44px #7c5cff3a}
+  .nowlab{font-size:11.5px; letter-spacing:2.5px; text-transform:uppercase; color:var(--accent2); font-weight:800; margin-bottom:6px}
+  .nownm{font-size:24px; font-weight:800; letter-spacing:-.4px; line-height:1.2; margin-bottom:18px}
+  .dial{position:relative; width:168px; height:168px; margin:0 auto 16px}
+  .dial .time{position:absolute; inset:0; display:flex; align-items:center; justify-content:center}
+  .dial .time .big{font-size:42px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-1px}
+  .dial .time .big.over{color:var(--red)}
+
+  .pace{display:inline-flex; align-items:center; gap:7px; padding:8px 15px; border-radius:20px; align-self:center;
+    font-size:13.5px; font-weight:700; font-variant-numeric:tabular-nums}
+  .pace.ok{background:#36d39922; color:var(--green)}
+  .pace.behind{background:#ff5c7c22; color:var(--red)}
+  .pace.even{background:#ffffff12; color:var(--muted)}
+  .pace svg{width:14px;height:14px}
+
+  .paused{display:inline-flex; align-items:center; gap:7px; padding:7px 14px; border-radius:18px; align-self:center; margin-top:10px;
+    font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; background:#ffb45422; color:var(--amber)}
+  .paused.dim{background:#ffffff0d; color:var(--muted)}
+  .paused svg{width:14px;height:14px}
+
+  .controls{display:flex; align-items:center; justify-content:center; gap:18px; margin-top:20px}
+  .cbtn{width:58px;height:58px;border-radius:50%; background:var(--card); border:1px solid var(--line); display:grid; place-items:center}
+  .cbtn svg{width:22px;height:22px}
+  .cbtn.main{width:78px;height:78px; background:var(--grad); border:none; box-shadow:0 8px 24px #7c5cff66}
+  .cbtn.main svg{width:30px;height:30px}
+  .cbtn.sm{width:50px;height:50px}
+  .cbtn.sm svg{width:18px;height:18px}
+  .cbtn:disabled{opacity:.3}
+
+  .done-screen{text-align:center; padding:0 10px}
+  .done-screen .burst{width:96px;height:96px;border-radius:50%;background:var(--grad);display:grid;place-items:center;margin:0 auto 22px;box-shadow:0 10px 36px #7c5cff66}
+  .done-screen .burst svg{width:46px;height:46px}
+  .done-screen h2{font-size:27px; font-weight:800; margin:0 0 8px; letter-spacing:-.5px}
+  .done-screen p{color:var(--muted); font-size:15px; margin:0 0 6px}
+  .done-stats{display:flex; gap:12px; justify-content:center; margin:26px 0 30px}
+  .done-stats .s{background:var(--card); border:1px solid var(--line); border-radius:var(--rs); padding:15px 20px; min-width:96px}
+  .done-stats .s .v{font-size:23px; font-weight:800; font-variant-numeric:tabular-nums}
+  .done-stats .s .k{font-size:12px; color:var(--muted); margin-top:3px}
+  .done-stats .s.ahead .v{color:var(--green)} .done-stats .s.late .v{color:var(--red)}
+
+  /* ---------- Modal (sheet) ---------- */
+  .scrim{position:fixed; inset:0; background:#000a; z-index:80; display:flex; align-items:flex-end; justify-content:center}
+  .sheet{background:var(--bg2); border:1px solid var(--line); border-bottom:none;
+    border-radius:24px 24px 0 0; width:100%; max-width:480px; padding:10px 20px calc(24px + env(safe-area-inset-bottom)); animation:up .22s ease}
+  @keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .sheet .grab{width:40px;height:4px;background:var(--line);border-radius:3px;margin:6px auto 16px}
+  .sheet h3{margin:0 0 16px; font-size:19px; font-weight:700}
+  .field{margin-bottom:14px}
+  .field label{display:block; font-size:13px; color:var(--muted); margin-bottom:7px; font-weight:600}
+  .field input[type=text]{width:100%; background:var(--card); border:1px solid var(--line); color:var(--txt);
+    font-size:16px; padding:14px; border-radius:var(--rs); outline:none}
+  .field input[type=text]:focus{border-color:var(--accent)}
+  .dur-row{display:flex; gap:12px}
+  .dur-row .col{flex:1}
+  .stepper{display:flex; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:var(--rs); overflow:hidden}
+  .stepper button{width:48px; height:52px; font-size:24px; font-weight:400; color:var(--accent2); display:grid; place-items:center}
+  .stepper input{flex:1; text-align:center; background:transparent; border:none; color:var(--txt); font-size:20px; font-weight:700; outline:none; width:100%; font-variant-numeric:tabular-nums; -moz-appearance:textfield}
+  .stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .quick{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+  .quick button{background:var(--card); border:1px solid var(--line); color:var(--muted); font-size:13px; font-weight:600; padding:8px 13px; border-radius:16px}
+  .quick button.on{background:var(--accent); border-color:var(--accent); color:#fff}
+  .btn-primary{width:100%; background:var(--grad); color:#fff; font-weight:800; font-size:16px; padding:16px; border-radius:var(--rs); margin-top:8px; box-shadow:0 8px 22px #7c5cff44}
+  .btn-ghost{width:100%; background:transparent; color:var(--red); font-weight:600; font-size:15px; padding:14px; margin-top:4px}
+  .sheet .menu-item{display:flex; align-items:center; gap:13px; padding:15px 4px; font-size:16px; font-weight:600; border-bottom:1px solid var(--line)}
+  .sheet .menu-item:last-child{border-bottom:none}
+  .sheet .menu-item svg{width:19px;height:19px; color:var(--muted)}
+  .sheet .menu-item.danger{color:var(--red)} .sheet .menu-item.danger svg{color:var(--red)}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div id="overlay"></div>
+
+<script>
+/* ============================ ATOMIC · MVP rutinas ============================ */
+const $ = (s,r=document)=>r.querySelector(s);
+const LS='atomic_routines_v1';
+const uid=()=> 'r'+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-3);
+
+/* ---------- estado ---------- */
+let state = load();
+function load(){
+  try{ const d=JSON.parse(localStorage.getItem(LS)); if(Array.isArray(d)) return {routines:d}; }catch(e){}
+  // seed de ejemplo la primera vez
+  return {routines:[{
+    id:uid(), name:'Rutina de la mañana',
+    tasks:[
+      {id:uid(), name:'Lavarme los dientes', sec:5*60},
+      {id:uid(), name:'Bañarme', sec:10*60},
+      {id:uid(), name:'Desayunar', sec:15*60},
+    ]
+  }]};
+}
+function save(){ localStorage.setItem(LS, JSON.stringify(state.routines)); }
+
+/* ---------- navegación ---------- */
+let view={name:'home'};       // {name:'home'} | {name:'edit', id}
+let run=null;                  // estado del timer (ver startRun)
+
+/* ---------- helpers de tiempo ---------- */
+function fmt(sec){ sec=Math.round(sec); const m=Math.floor(Math.abs(sec)/60), s=Math.abs(sec)%60;
+  return (sec<0?'-':'')+m+':'+String(s).padStart(2,'0'); }
+function fmtLong(sec){ sec=Math.round(sec); const m=Math.floor(sec/60), s=sec%60;
+  if(m&&s) return m+' min '+s+'s'; if(m) return m+' min'; return s+'s'; }
+function totalSec(rt){ return rt.tasks.reduce((a,t)=>a+t.sec,0); }
+const ICON={
+  bolt:'<path d="M11 2 4 13h5l-1 9 8-12h-5l0-8z" fill="currentColor"/>',
+  play:'<path d="M6 4l13 8-13 8V4z" fill="currentColor"/>',
+  plus:'<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+  back:'<path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+  trash:'<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  x:'<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+  pause:'<path d="M8 5v14M16 5v14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>',
+  next:'<path d="M5 4l10 8-10 8V4zM18 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="currentColor"/>',
+  prev:'<path d="M19 4L9 12l10 8V4zM6 5v14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="currentColor"/>',
+  check:'<path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  list:'<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  clock:'<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>',
+  dots:'<circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/>',
+  up:'<path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  down:'<path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  edit:'<path d="M4 20h4L18 10l-4-4L4 16v4zM14 6l4 4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+};
+const svg=(name,cls='')=> '<svg class="'+cls+'" viewBox="0 0 24 24">'+ICON[name]+'</svg>';
+const esc=s=> String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ============================ RENDER ============================ */
+function render(){
+  if(view.name==='home') renderHome();
+  else if(view.name==='edit') renderEdit();
+}
+
+function renderHome(){
+  const rs=state.routines;
+  let cards = rs.length ? rs.map(rt=>{
+    const n=rt.tasks.length, tot=totalSec(rt);
+    return `<div class="rcard" data-action="open" data-id="${rt.id}">
+      <div class="bar"></div>
+      <h3>${esc(rt.name)||'Sin nombre'}</h3>
+      <div class="meta"><span><b>${n}</b> ${n===1?'paso':'pasos'}</span>
+        <span>${svg('clock')}${tot?fmtLong(tot):'—'}</span></div>
+      <button class="go" data-action="start" data-id="${rt.id}">${svg('play')}</button>
+    </div>`;
+  }).join('') : `<div class="empty">
+      <div class="ico">${svg('list')}</div>
+      <h3>Todavía no tenés rutinas</h3>
+      <p>Creá tu primera rutina y agregale<br>los pasos con su duración.</p>
+    </div>`;
+
+  $('#app').innerHTML = `
+    <div class="top">
+      <div class="logo">${svg('bolt')}</div>
+      <div><div class="brand">Atomic</div><div class="sub">Tus rutinas, paso a paso</div></div>
+    </div>
+    <div class="section-h"><h2>RUTINAS</h2></div>
+    ${cards}
+    <button class="fab" data-action="new-routine">${svg('plus')} Nueva rutina</button>`;
+}
+
+function renderEdit(){
+  const rt=state.routines.find(r=>r.id===view.id); if(!rt){ view={name:'home'}; return render(); }
+  const tot=totalSec(rt), n=rt.tasks.length;
+  const tasks = rt.tasks.map((t,i)=>`
+    <div class="task" draggable="true" data-tid="${t.id}" data-i="${i}">
+      <div class="grip" data-grip><span></span><span></span><span></span></div>
+      <div class="idx">${i+1}</div>
+      <div class="nm" data-action="edit-task" data-tid="${t.id}">${esc(t.name)||'Sin nombre'}</div>
+      <div class="dur" data-action="edit-task" data-tid="${t.id}">${fmt(t.sec)}</div>
+      <button class="del" data-action="del-task" data-tid="${t.id}">${svg('trash')}</button>
+    </div>`).join('');
+
+  $('#app').innerHTML = `
+    <button class="backbtn" data-action="home">${svg('back')} Rutinas</button>
+    <input class="titlein" id="rname" placeholder="Nombre de la rutina" value="${esc(rt.name)}">
+    <div class="editmeta"><span><b>${n}</b> ${n===1?'paso':'pasos'}</span><span>Total: <b>${tot?fmtLong(tot):'—'}</b></span></div>
+    <div id="tasklist">${tasks}</div>
+    <button class="addtask" data-action="add-task">${svg('plus')} Agregar paso</button>
+    <div class="runbar">
+      <button class="start ${n?'':'dis'}" data-action="start" data-id="${rt.id}">${svg('play')} Iniciar rutina</button>
+    </div>`;
+
+  $('#rname').addEventListener('input', e=>{ rt.name=e.target.value; save(); });
+  wireDrag(rt);
+}
+
+/* ============================ EDIT: drag para reordenar ============================ */
+function wireDrag(rt){
+  const listEl=$('#tasklist'); let dragId=null;
+  listEl.querySelectorAll('.task').forEach(el=>{
+    el.addEventListener('dragstart',e=>{ dragId=el.dataset.tid; el.classList.add('dragging'); });
+    el.addEventListener('dragend',()=>{ el.classList.remove('dragging'); listEl.querySelectorAll('.task').forEach(t=>t.classList.remove('dragover')); });
+    el.addEventListener('dragover',e=>{ e.preventDefault(); el.classList.add('dragover'); });
+    el.addEventListener('dragleave',()=> el.classList.remove('dragover'));
+    el.addEventListener('drop',e=>{ e.preventDefault();
+      const from=rt.tasks.findIndex(t=>t.id===dragId), to=rt.tasks.findIndex(t=>t.id===el.dataset.tid);
+      if(from>-1&&to>-1&&from!==to){ const [m]=rt.tasks.splice(from,1); rt.tasks.splice(to,0,m); save(); render(); }
+    });
+  });
+}
+
+/* ============================ MODALES ============================ */
+function closeSheet(){ $('#overlay').innerHTML=''; }
+function openSheet(html){
+  $('#overlay').innerHTML = `<div class="scrim" data-action="scrim"><div class="sheet">${html}</div></div>`;
+}
+
+let editingTask=null; // {rtId, tid|null}
+function openTaskSheet(rtId, tid){
+  const rt=state.routines.find(r=>r.id===rtId);
+  const t = tid ? rt.tasks.find(x=>x.id===tid) : null;
+  editingTask={rtId, tid};
+  const mins = t ? Math.floor(t.sec/60) : 5, secs = t ? t.sec%60 : 0;
+  openSheet(`
+    <div class="grab"></div>
+    <h3>${t?'Editar paso':'Nuevo paso'}</h3>
+    <div class="field">
+      <label>¿Qué tenés que hacer?</label>
+      <input type="text" id="tname" placeholder="Ej: Lavarme los dientes" value="${t?esc(t.name):''}" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Duración</label>
+      <div class="dur-row">
+        <div class="col"><div class="stepper">
+          <button data-step="m-1">−</button><input id="tmin" type="number" inputmode="numeric" value="${mins}" min="0" max="180"><button data-step="m+1">+</button>
+        </div><div style="text-align:center;font-size:12px;color:var(--muted);margin-top:6px">minutos</div></div>
+        <div class="col"><div class="stepper">
+          <button data-step="s-5">−</button><input id="tsec" type="number" inputmode="numeric" value="${secs}" min="0" max="59"><button data-step="s+5">+</button>
+        </div><div style="text-align:center;font-size:12px;color:var(--muted);margin-top:6px">segundos</div></div>
+      </div>
+      <div class="quick">
+        ${[1,2,5,10,15,20,30].map(m=>`<button data-quick="${m}">${m} min</button>`).join('')}
+      </div>
+    </div>
+    <button class="btn-primary" data-action="save-task">${t?'Guardar':'Agregar paso'}</button>
+    ${t?`<button class="btn-ghost" data-action="del-task-modal">Eliminar paso</button>`:''}
+  `);
+  setTimeout(()=>{ const el=$('#tname'); if(el && !t) el.focus(); },120);
+}
+function commitTask(){
+  const rt=state.routines.find(r=>r.id===editingTask.rtId);
+  const name=$('#tname').value.trim();
+  let m=parseInt($('#tmin').value)||0, s=parseInt($('#tsec').value)||0;
+  let sec=m*60+s; if(sec<5) sec=5; // mínimo 5s
+  if(!name){ $('#tname').focus(); return; }
+  if(editingTask.tid){ const t=rt.tasks.find(x=>x.id===editingTask.tid); t.name=name; t.sec=sec; }
+  else rt.tasks.push({id:uid(), name, sec});
+  save(); closeSheet(); render();
+}
+
+/* ============================ RUNNER (timer) ============================ */
+function startRun(rtId){
+  const rt=state.routines.find(r=>r.id===rtId); if(!rt||!rt.tasks.length) return;
+  run={ rt, i:0, remaining:rt.tasks[0].sec, running:true, last:Date.now(),
+        plannedDone:0, actualStart:Date.now(),
+        pausedTotal:0, pauseStart:null, stepPausedTotal:0, done:false };
+  drawRunner(); tick();
+  if(!run.timer) run.timer=setInterval(loop, 250);
+}
+function endRun(){ if(run&&run.timer) clearInterval(run.timer); run=null; $('#overlay').innerHTML=''; render(); }
+
+function loop(){
+  if(!run||run.done) return;
+  const now=Date.now();
+  if(run.running){ const dt=(now-run.last)/1000; run.remaining-=dt;
+    if(run.remaining<=0 && !run.beeped){ beep(); buzz(); run.beeped=true; }
+  }
+  run.last=now;
+  paintRunner();
+}
+function tick(){ run.last=Date.now(); paintRunner(); }
+
+// si hay una pausa en curso, la cierra acumulándola en los totales (no cuenta como atraso)
+function commitOpenPause(){
+  if(run.pauseStart){ const d=Date.now()-run.pauseStart; run.pausedTotal+=d; run.stepPausedTotal+=d;
+    run.pauseStart = run.running?null:Date.now(); }
+}
+function nextTask(){
+  const rt=run.rt; commitOpenPause();
+  // sumamos al "planeado" la duración completa del paso que cerramos
+  run.plannedDone += rt.tasks[run.i].sec;
+  if(run.i >= rt.tasks.length-1){ finishRun(); return; }
+  run.i++; run.remaining=rt.tasks[run.i].sec; run.beeped=false; run.stepPausedTotal=0; run.last=Date.now();
+  drawRunner();
+}
+function prevTask(){
+  commitOpenPause();
+  if(run.i===0){ run.remaining=run.rt.tasks[0].sec; run.beeped=false; run.stepPausedTotal=0; run.last=Date.now(); drawRunner(); return; }
+  run.i--; run.plannedDone-=run.rt.tasks[run.i].sec;
+  run.remaining=run.rt.tasks[run.i].sec; run.beeped=false; run.stepPausedTotal=0; run.last=Date.now();
+  drawRunner();
+}
+function togglePause(){
+  const now=Date.now();
+  if(run.running){ run.running=false; run.pauseStart=now; }      // pausar
+  else { if(run.pauseStart){ const d=now-run.pauseStart; run.pausedTotal+=d; run.stepPausedTotal+=d; run.pauseStart=null; } run.running=true; } // reanudar
+  run.last=now; drawRunner();
+}
+
+function finishRun(){
+  run.done=true; if(run.timer) clearInterval(run.timer);
+  const pausedMs = run.pausedTotal + (run.pauseStart?(Date.now()-run.pauseStart):0);
+  const actual=(Date.now()-run.actualStart-pausedMs)/1000;
+  const planned=totalSec(run.rt);
+  const diff=actual-planned;
+  const diffClass = Math.abs(diff)<3?'':(diff<0?'ahead':'late');
+  const diffTxt = Math.abs(diff)<3?'En hora':(diff<0?'-'+fmtLong(-diff):'+'+fmtLong(diff));
+  $('#overlay').innerHTML = `<div class="runner"><div class="mid"><div class="done-screen">
+    <div class="burst">${svg('check')}</div>
+    <h2>¡Rutina completa! 🎉</h2>
+    <p>${esc(run.rt.name)}</p>
+    <div class="done-stats">
+      <div class="s"><div class="v">${fmtLong(actual)}</div><div class="k">Tu tiempo</div></div>
+      <div class="s ${diffClass}"><div class="v">${diffTxt}</div><div class="k">vs. planeado</div></div>
+    </div>
+    <button class="btn-primary" data-action="run-close" style="max-width:260px;margin:0 auto">Listo</button>
+  </div></div></div>`;
+}
+
+// dibuja la estructura del runner (lo que no cambia cada 250ms)
+function drawRunner(){
+  if(run.done) return;
+  const rt=run.rt, i=run.i;
+  const segs = rt.tasks.map((_,k)=>`<div class="seg ${k<i?'done':''}"><i id="seg${k}"></i></div>`).join('');
+  const R=74, C=2*Math.PI*R;
+  let items='';
+  rt.tasks.forEach((t,k)=>{
+    if(k<i){
+      items+=`<div class="step done"><span class="tick">${svg('check')}</span><span class="nm">${esc(t.name)}</span><span class="pt">${fmt(t.sec)}</span></div>`;
+    } else if(k===i){
+      items+=`<div class="step now" id="nowcard">
+        <div class="nowlab">Ahora</div>
+        <div class="nownm">${esc(t.name)}</div>
+        <div class="dial">
+          <svg width="168" height="168" viewBox="0 0 168 168">
+            <circle cx="84" cy="84" r="${R}" fill="none" stroke="var(--line)" stroke-width="11"/>
+            <circle id="ring" cx="84" cy="84" r="${R}" fill="none" stroke="url(#g)" stroke-width="11" stroke-linecap="round"
+              transform="rotate(-90 84 84)" stroke-dasharray="${C}" stroke-dashoffset="0"/>
+            <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#5cc8ff"/></linearGradient></defs>
+          </svg>
+          <div class="time"><div class="big" id="bigtime">${fmt(run.remaining)}</div></div>
+        </div>
+        <div class="pace even" id="pace"></div>
+        <div class="paused hide" id="paused"></div>
+      </div>`;
+    } else if(k===i+1 || k===i+2){
+      items+=`<div class="step next ${k===i+2?'far':''}"><span class="dot"></span><span class="nm">${esc(t.name)}</span><span class="pt">${fmt(t.sec)}</span></div>`;
+    }
+  });
+  $('#overlay').innerHTML = `<div class="runner">
+    <div class="rhead">
+      <button class="x" data-action="run-exit">${svg('x')}</button>
+      <div class="rname">${esc(rt.name)}</div>
+      <div class="stepof">${i+1} / ${rt.tasks.length}</div>
+    </div>
+    <div class="prog">${segs}</div>
+    <div class="rlist"><div class="rlist-in">${items}</div></div>
+    <div class="controls">
+      <button class="cbtn sm" data-action="run-prev">${svg('prev')}</button>
+      <button class="cbtn main" data-action="run-pause" id="ppbtn">${svg(run.running?'pause':'play')}</button>
+      <button class="cbtn sm" data-action="run-next">${svg('next')}</button>
+    </div>
+  </div>`;
+  const nc=$('#nowcard'); if(nc) nc.scrollIntoView({block:'center'});
+  paintRunner();
+}
+
+// actualiza solo los números (cada 250ms)
+function paintRunner(){
+  if(!run||run.done) return;
+  const rt=run.rt, i=run.i, t=rt.tasks[i];
+  const bt=$('#bigtime'); if(!bt) return;
+  bt.textContent=fmt(run.remaining);
+  bt.classList.toggle('over', run.remaining<0);
+  // anillo: se vacía como aguja del reloj (el hueco arranca arriba y avanza hacia la derecha)
+  const ring=$('#ring'); const R=74, C=2*Math.PI*R;
+  let frac = t.sec>0 ? Math.max(0,Math.min(1, run.remaining/t.sec)) : 0;
+  ring.style.strokeDashoffset = -C*(1-frac);
+  ring.style.stroke = run.remaining<0 ? 'var(--red)' : 'url(#g)';
+  // segmento actual de la barra de arriba
+  const seg=$('#seg'+i); if(seg) seg.style.width = (t.sec>0?Math.min(100,(1-frac)*100):100)+'%';
+  // ritmo (se congela durante la pausa: el tiempo pausado no cuenta como atraso)
+  const pausedMs = run.pausedTotal + (run.pauseStart?(Date.now()-run.pauseStart):0);
+  const actual = (Date.now()-run.actualStart-pausedMs)/1000;
+  const spentCurrent = t.sec - Math.max(run.remaining,0);
+  const plannedNow = run.plannedDone + Math.min(t.sec, spentCurrent);
+  const diff = actual - plannedNow; // >0 atrasado, <0 adelantado
+  const pace=$('#pace');
+  if(Math.abs(diff)<2){ pace.className='pace even'; pace.innerHTML='En hora'; }
+  else if(diff<0){ pace.className='pace ok'; pace.innerHTML=svg('up')+' '+fmtLong(-diff)+' adelantado'; }
+  else { pace.className='pace behind'; pace.innerHTML=svg('down')+' '+fmtLong(diff)+' atrasado'; }
+  // relojito de pausa
+  const pz=$('#paused');
+  if(pz){
+    if(run.pauseStart){ const sp=(run.stepPausedTotal+(Date.now()-run.pauseStart))/1000;
+      pz.className='paused'; pz.innerHTML=svg('clock')+' En pausa · '+fmt(sp); }
+    else if(run.stepPausedTotal>0){ const sp=run.stepPausedTotal/1000;
+      pz.className='paused dim'; pz.innerHTML=svg('clock')+' Pausado '+fmt(sp)+' en este paso'; }
+    else pz.className='paused hide';
+  }
+}
+
+/* ---------- sonido + vibración al terminar un paso ---------- */
+let AC=null;
+function beep(){ try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+  [0,0.18].forEach((d,k)=>{ const o=AC.createOscillator(),g=AC.createGain();
+    o.frequency.value=k?660:880; o.connect(g); g.connect(AC.destination);
+    g.gain.setValueAtTime(0.001,AC.currentTime+d); g.gain.exponentialRampToValueAtTime(0.25,AC.currentTime+d+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+d+0.16);
+    o.start(AC.currentTime+d); o.stop(AC.currentTime+d+0.18); });
+}catch(e){} }
+function buzz(){ try{ navigator.vibrate && navigator.vibrate([120,60,120]); }catch(e){} }
+
+/* ============================ ROUTING DE CLICKS ============================ */
+document.addEventListener('click', e=>{
+  // steppers +/- de duración (no tienen data-action, se manejan primero)
+  const stepBtn=e.target.closest('[data-step]');
+  if(stepBtn){ stepDur(stepBtn.dataset.step); return; }
+  // atajos rápidos (1 min, 5 min, ...)
+  const quickBtn=e.target.closest('[data-quick]');
+  if(quickBtn){ $('#tmin').value=quickBtn.dataset.quick; $('#tsec').value=0;
+    document.querySelectorAll('.quick button').forEach(b=>b.classList.toggle('on', b===quickBtn)); return; }
+  const el=e.target.closest('[data-action]'); if(!el) return;
+  const a=el.dataset.action, id=el.dataset.id, tid=el.dataset.tid;
+  switch(a){
+    case 'home': view={name:'home'}; render(); break;
+    case 'open': view={name:'edit', id}; render(); break;
+    case 'new-routine':{ const r={id:uid(), name:'', tasks:[]}; state.routines.push(r); save(); view={name:'edit', id:r.id}; render(); setTimeout(()=>$('#rname')&&$('#rname').focus(),60); break; }
+    case 'add-task': openTaskSheet(view.id, null); break;
+    case 'edit-task': openTaskSheet(view.id, tid); break;
+    case 'save-task': commitTask(); break;
+    case 'del-task':{ const rt=state.routines.find(r=>r.id===view.id); rt.tasks=rt.tasks.filter(t=>t.id!==tid); save(); render(); break; }
+    case 'del-task-modal':{ const rt=state.routines.find(r=>r.id===editingTask.rtId); rt.tasks=rt.tasks.filter(t=>t.id!==editingTask.tid); save(); closeSheet(); render(); break; }
+    case 'start': if(!el.classList.contains('dis')) startRun(id); break;
+    case 'run-pause': togglePause(); break;
+    case 'run-next': nextTask(); break;
+    case 'run-prev': prevTask(); break;
+    case 'run-exit': if(confirm('¿Salir de la rutina? Se pierde el progreso de esta corrida.')) endRun(); break;
+    case 'run-close': endRun(); break;
+    case 'scrim': if(e.target.classList.contains('scrim')) closeSheet(); break;
+  }
+});
+function stepDur(code){
+  const min=$('#tmin'), sec=$('#tsec');
+  if(code==='m-1') min.value=Math.max(0,(parseInt(min.value)||0)-1);
+  if(code==='m+1') min.value=(parseInt(min.value)||0)+1;
+  if(code==='s-5') sec.value=((parseInt(sec.value)||0)-5+60)%60;
+  if(code==='s+5') sec.value=((parseInt(sec.value)||0)+5)%60;
+  document.querySelectorAll('.quick button').forEach(b=>b.classList.remove('on'));
+}
+
+render();
+</script>
+</body>
+</html>
