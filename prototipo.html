@@ -307,20 +307,25 @@ function statAvg(taskId){
 /* ---------- TO-DOS del día ---------- */
 let todos = loadTodos();
 function loadTodos(){
-  try{ const d=JSON.parse(localStorage.getItem(LS_TODOS)); if(d&&Array.isArray(d.items)) return d; }catch(e){}
+  try{ const d=JSON.parse(localStorage.getItem(LS_TODOS)); if(d&&Array.isArray(d.items)){ migrateTodos(d); return d; } }catch(e){}
   const seed={ startMin:13*60+30, items:[
     {id:uid(), name:'Sacar turno resonancia',             mins:30,  icon:'🧲', done:false},
     {id:uid(), name:'Sacar turno kinesiología',           mins:30,  icon:'🩹', done:false},
     {id:uid(), name:'Responder pregunta de MercadoLibre', mins:30,  icon:'💬', done:false},
     {id:uid(), name:'Caminata',                           mins:40,  icon:'🚶', done:false},
     {id:uid(), name:'Trabajar (foco)',                    mins:180, icon:'💻', done:false},
-    {id:uid(), name:'Comprar ropa',                       mins:30,  icon:'🛍️', done:false},
+    {id:uid(), name:'Comprar roping',                     mins:30,  icon:'🌿', done:false},
     {id:uid(), name:'Tarea de plantas',                   mins:30,  icon:'🪴', done:false},
   ]};
   localStorage.setItem(LS_TODOS, JSON.stringify(seed));
   return seed;
 }
 function saveTodos(){ localStorage.setItem(LS_TODOS, JSON.stringify(todos)); }
+// migraciones sobre datos ya guardados en el teléfono
+function migrateTodos(d){ let ch=false;
+  d.items.forEach(it=>{ if(it.name==='Comprar ropa'){ it.name='Comprar roping'; it.icon='🌿'; ch=true; } });
+  if(ch) localStorage.setItem(LS_TODOS, JSON.stringify(d));
+}
 
 /* ---------- navegación ---------- */
 let view={name:'home'};       // {name:'home'} | {name:'edit', id}
