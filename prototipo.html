@@ -228,6 +228,28 @@
   .sheet .menu-item:last-child{border-bottom:none}
   .sheet .menu-item svg{width:19px;height:19px; color:var(--muted)}
   .sheet .menu-item.danger{color:var(--red)} .sheet .menu-item.danger svg{color:var(--red)}
+
+  /* ---------- To-dos ---------- */
+  .segtab{display:flex; gap:4px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:4px; margin:0 0 18px}
+  .segtab button{flex:1; padding:10px; border-radius:10px; font-size:14px; font-weight:700; color:var(--muted)}
+  .segtab button.on{background:var(--grad); color:#fff}
+  .daybar{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:2px 2px 14px}
+  .daylabel{font-size:15px; font-weight:700}
+  .startchip{display:inline-flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--line); color:var(--accent2); font-size:13px; font-weight:700; padding:8px 12px; border-radius:16px; flex:none}
+  .startchip svg{width:14px; height:14px}
+  .trow{display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line); border-radius:var(--rs); padding:13px 14px; margin-bottom:10px}
+  .trow.dragging{opacity:.5} .trow.dragover{border-color:var(--accent)}
+  .tcheck{width:26px; height:26px; border-radius:50%; border:2px solid var(--muted2); display:grid; place-items:center; flex:none}
+  .tcheck svg{width:15px; height:15px; color:#fff; opacity:0}
+  .tcheck.on{background:var(--green); border-color:var(--green)} .tcheck.on svg{opacity:1}
+  .trow .tmid{flex:1; min-width:0; overflow:hidden}
+  .trow .tname{font-size:15.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .trow .trange{font-size:12.5px; color:var(--muted); margin-top:3px; font-variant-numeric:tabular-nums}
+  .trow.done .tname{text-decoration:line-through; color:var(--muted2)}
+  .trow .grip{color:var(--muted2); display:flex; flex-direction:column; gap:2px; touch-action:none; cursor:grab; flex:none}
+  .trow .grip span{width:15px; height:2px; background:currentColor; border-radius:2px; display:block}
+  .tfoot{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:16px 2px 4px; font-size:13.5px; color:var(--muted)}
+  .tfoot b{color:var(--txt); font-weight:700}
 </style>
 </head>
 <body>
@@ -239,6 +261,7 @@
 const $ = (s,r=document)=>r.querySelector(s);
 const LS='atomic_routines_v2';
 const LS_STATS='atomic_stats_v1';
+const LS_TODOS='atomic_todos_v1';
 const uid=()=> 'r'+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-3);
 
 /* ---------- estado ---------- */
@@ -281,8 +304,27 @@ function statAvg(taskId){
   return Math.round(e.samples.reduce((a,b)=>a+b,0)/e.samples.length);
 }
 
+/* ---------- TO-DOS del día ---------- */
+let todos = loadTodos();
+function loadTodos(){
+  try{ const d=JSON.parse(localStorage.getItem(LS_TODOS)); if(d&&Array.isArray(d.items)) return d; }catch(e){}
+  const seed={ startMin:13*60+30, items:[
+    {id:uid(), name:'Sacar turno resonancia',             mins:30,  icon:'🧲', done:false},
+    {id:uid(), name:'Sacar turno kinesiología',           mins:30,  icon:'🩹', done:false},
+    {id:uid(), name:'Responder pregunta de MercadoLibre', mins:30,  icon:'💬', done:false},
+    {id:uid(), name:'Caminata',                           mins:40,  icon:'🚶', done:false},
+    {id:uid(), name:'Trabajar (foco)',                    mins:180, icon:'💻', done:false},
+    {id:uid(), name:'Comprar ropa',                       mins:30,  icon:'🛍️', done:false},
+    {id:uid(), name:'Tarea de plantas',                   mins:30,  icon:'🪴', done:false},
+  ]};
+  localStorage.setItem(LS_TODOS, JSON.stringify(seed));
+  return seed;
+}
+function saveTodos(){ localStorage.setItem(LS_TODOS, JSON.stringify(todos)); }
+
 /* ---------- navegación ---------- */
 let view={name:'home'};       // {name:'home'} | {name:'edit', id}
+let homeTab='rutinas';         // 'rutinas' | 'hoy'
 let run=null;                  // estado del timer (ver startRun)
 
 /* ---------- helpers de tiempo ---------- */
@@ -334,6 +376,81 @@ function nebulaSVG(){return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2
   </g>
 </svg>`;}
 
+/* ============================ TO-DOS ============================ */
+function hhmm(min){ min=((Math.round(min)%1440)+1440)%1440; const h=Math.floor(min/60), m=min%60; return h+':'+String(m).padStart(2,'0'); }
+function todayLabel(){ const d=new Date();
+  const dias=['dom','lun','mar','mié','jue','vie','sáb'], mes=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return 'Hoy · '+dias[d.getDay()]+' '+d.getDate()+' '+mes[d.getMonth()]; }
+// agenda: bloques secuenciales desde la hora de arranque
+function todoSchedule(){ let t=todos.startMin, out=[]; todos.items.forEach(it=>{ out.push({it,start:t,end:t+it.mins}); t+=it.mins; }); return out; }
+
+function renderTodos(){
+  const sched=todoSchedule();
+  const pend=todos.items.filter(i=>!i.done), pendMin=pend.reduce((a,i)=>a+i.mins,0);
+  const finish= sched.length? sched[sched.length-1].end : todos.startMin;
+  const rows = todos.items.length ? sched.map(({it,start,end})=>`
+    <div class="trow ${it.done?'done':''}" draggable="true" data-tid="${it.id}">
+      <button class="tcheck ${it.done?'on':''}" data-action="todo-toggle" data-tid="${it.id}">${svg('check')}</button>
+      <div class="tmid" data-action="todo-edit" data-tid="${it.id}">
+        <div class="tname">${it.icon?it.icon+' ':''}${esc(it.name)}</div>
+        <div class="trange">${hhmm(start)}–${hhmm(end)} · ${it.mins} min</div>
+      </div>
+      <div class="grip" data-grip><span></span><span></span><span></span></div>
+    </div>`).join('') : `<div class="empty"><div class="ico">${svg('list')}</div><h3>Sin tareas para hoy</h3><p>Agregá tu primera tarea<br>con el botón de abajo.</p></div>`;
+  return `
+    <div class="daybar">
+      <div class="daylabel">${todayLabel()}</div>
+      <button class="startchip" data-action="todo-start">${svg('clock')} Arranca ${hhmm(todos.startMin)}</button>
+    </div>
+    <div id="todolist">${rows}</div>
+    ${todos.items.length?`<div class="tfoot"><span><b>${pend.length}</b> pendiente${pend.length===1?'':'s'} · ${pendMin?fmtLong(pendMin*60):'—'}</span><span>Terminás ~<b>${hhmm(finish)}</b></span></div>`:''}`;
+}
+
+let editingTodo=null;
+function openTodoSheet(tid){
+  const it = tid ? todos.items.find(x=>x.id===tid) : null;
+  editingTodo={tid};
+  const mins = it ? it.mins : 30;
+  openSheet(`
+    <div class="grab"></div>
+    <h3>${it?'Editar tarea':'Nueva tarea'}</h3>
+    <div class="field"><label>¿Qué tenés que hacer?</label>
+      <input type="text" id="tname" placeholder="Ej: Sacar turno" value="${it?esc(it.name):''}" autocomplete="off"></div>
+    <div class="field"><label>Ícono (emoji)</label>
+      <div class="emoji-pick"><input type="text" id="ticon" class="emoji-in" value="${it&&it.icon?esc(it.icon):''}" maxlength="2" placeholder="🙂">
+        <div class="emoji-sug">${['📞','🧲','🩹','💬','💻','🚶','🛍️','🪴','🛒','📧','📝','📅','🏥','💊','🏋️','📖','✅','🧹','💰','🍽️'].map(e=>`<button data-emoji="${e}" ${it&&it.icon===e?'class="on"':''}>${e}</button>`).join('')}</div>
+      </div></div>
+    <div class="field"><label>Duración (minutos)</label>
+      <div class="stepper"><button data-step="m-5">−</button><input id="tmin" type="number" inputmode="numeric" value="${mins}" min="1" max="600"><button data-step="m+5">+</button></div>
+      <input type="hidden" id="tsec" value="0">
+      <div class="quick">${[10,15,30,40,60,90,120,180].map(m=>`<button data-quick="${m}">${m} min</button>`).join('')}</div>
+    </div>
+    <button class="btn-primary" data-action="todo-save">${it?'Guardar':'Agregar tarea'}</button>
+    ${it?`<button class="btn-ghost" data-action="todo-del-modal">Eliminar tarea</button>`:''}`);
+  setTimeout(()=>{ const el=$('#tname'); if(el && !it) el.focus(); },120);
+}
+function commitTodo(){
+  const name=$('#tname').value.trim(); const icon=($('#ticon').value||'').trim();
+  let mins=parseInt($('#tmin').value)||0; if(mins<1) mins=1;
+  if(!name){ $('#tname').focus(); return; }
+  if(editingTodo.tid){ const it=todos.items.find(x=>x.id===editingTodo.tid); it.name=name; it.mins=mins; it.icon=icon; }
+  else todos.items.push({id:uid(), name, mins, icon, done:false});
+  saveTodos(); closeSheet(); render();
+}
+function wireDragTodos(){
+  const listEl=$('#todolist'); if(!listEl) return; let dragId=null;
+  listEl.querySelectorAll('.trow').forEach(el=>{
+    el.addEventListener('dragstart',()=>{ dragId=el.dataset.tid; el.classList.add('dragging'); });
+    el.addEventListener('dragend',()=>{ el.classList.remove('dragging'); listEl.querySelectorAll('.trow').forEach(t=>t.classList.remove('dragover')); });
+    el.addEventListener('dragover',e=>{ e.preventDefault(); el.classList.add('dragover'); });
+    el.addEventListener('dragleave',()=> el.classList.remove('dragover'));
+    el.addEventListener('drop',e=>{ e.preventDefault();
+      const from=todos.items.findIndex(t=>t.id===dragId), to=todos.items.findIndex(t=>t.id===el.dataset.tid);
+      if(from>-1&&to>-1&&from!==to){ const [m]=todos.items.splice(from,1); todos.items.splice(to,0,m); saveTodos(); render(); }
+    });
+  });
+}
+
 /* ============================ RENDER ============================ */
 function render(){
   if(view.name==='home') renderHome();
@@ -341,30 +458,42 @@ function render(){
 }
 
 function renderHome(){
-  const rs=state.routines;
-  let cards = rs.length ? rs.map(rt=>{
-    const n=rt.tasks.length, tot=totalSec(rt);
-    return `<div class="rcard" data-action="open" data-id="${rt.id}">
-      <div class="bar"></div>
-      <h3>${esc(rt.name)||'Sin nombre'}</h3>
-      <div class="meta"><span><b>${n}</b> ${n===1?'paso':'pasos'}</span>
-        <span>${svg('clock')}${tot?fmtLong(tot):'—'}</span></div>
-      <button class="go" data-action="start" data-id="${rt.id}">${svg('play')}</button>
-    </div>`;
-  }).join('') : `<div class="empty">
-      <div class="ico">${svg('list')}</div>
-      <h3>Todavía no tenés rutinas</h3>
-      <p>Creá tu primera rutina y agregale<br>los pasos con su duración.</p>
-    </div>`;
-
+  const seg=`<div class="segtab">
+    <button class="${homeTab==='rutinas'?'on':''}" data-action="rutinas-tab">Rutinas</button>
+    <button class="${homeTab==='hoy'?'on':''}" data-action="hoy-tab">Hoy</button>
+  </div>`;
+  let body, fab;
+  if(homeTab==='hoy'){
+    body=renderTodos();
+    fab=`<button class="fab" data-action="todo-add">${svg('plus')} Agregar tarea</button>`;
+  } else {
+    const rs=state.routines;
+    const cards = rs.length ? rs.map(rt=>{
+      const n=rt.tasks.length, tot=totalSec(rt);
+      return `<div class="rcard" data-action="open" data-id="${rt.id}">
+        <div class="bar"></div>
+        <h3>${esc(rt.name)||'Sin nombre'}</h3>
+        <div class="meta"><span><b>${n}</b> ${n===1?'paso':'pasos'}</span>
+          <span>${svg('clock')}${tot?fmtLong(tot):'—'}</span></div>
+        <button class="go" data-action="start" data-id="${rt.id}">${svg('play')}</button>
+      </div>`;
+    }).join('') : `<div class="empty">
+        <div class="ico">${svg('list')}</div>
+        <h3>Todavía no tenés rutinas</h3>
+        <p>Creá tu primera rutina y agregale<br>los pasos con su duración.</p>
+      </div>`;
+    body=cards;
+    fab=`<button class="fab" data-action="new-routine">${svg('plus')} Nueva rutina</button>`;
+  }
   $('#app').innerHTML = `
     <div class="top">
       <div class="logo">${nebulaSVG()}</div>
-      <div><div class="brand">Atomic</div><div class="sub">Tus rutinas, paso a paso</div></div>
+      <div><div class="brand">Atomic</div><div class="sub">${homeTab==='hoy'?'Tu día, en bloques':'Tus rutinas, paso a paso'}</div></div>
     </div>
-    <div class="section-h"><h2>RUTINAS</h2></div>
-    ${cards}
-    <button class="fab" data-action="new-routine">${svg('plus')} Nueva rutina</button>`;
+    ${seg}
+    ${body}
+    ${fab}`;
+  if(homeTab==='hoy') wireDragTodos();
 }
 
 function renderEdit(){
@@ -663,6 +792,15 @@ document.addEventListener('click', e=>{
   const a=el.dataset.action, id=el.dataset.id, tid=el.dataset.tid;
   switch(a){
     case 'home': view={name:'home'}; render(); break;
+    case 'rutinas-tab': homeTab='rutinas'; render(); break;
+    case 'hoy-tab': homeTab='hoy'; render(); break;
+    case 'todo-add': openTodoSheet(null); break;
+    case 'todo-edit': openTodoSheet(tid); break;
+    case 'todo-save': commitTodo(); break;
+    case 'todo-del-modal':{ todos.items=todos.items.filter(t=>t.id!==editingTodo.tid); saveTodos(); closeSheet(); render(); break; }
+    case 'todo-toggle':{ const it=todos.items.find(x=>x.id===tid); if(it){ it.done=!it.done; saveTodos(); render(); } break; }
+    case 'todo-start':{ const v=prompt('¿A qué hora arrancás? (HH:MM, 24hs)', hhmm(todos.startMin));
+      if(v){ const m=v.match(/^(\d{1,2}):(\d{2})$/); if(m){ todos.startMin=(+m[1])*60+(+m[2]); saveTodos(); render(); } } break; }
     case 'open': view={name:'edit', id}; render(); break;
     case 'new-routine':{ const r={id:uid(), name:'', tasks:[]}; state.routines.push(r); save(); view={name:'edit', id:r.id}; render(); setTimeout(()=>$('#rname')&&$('#rname').focus(),60); break; }
     case 'add-task': openTaskSheet(view.id, null); break;
@@ -685,8 +823,10 @@ function stepDur(code){
   const min=$('#tmin'), sec=$('#tsec');
   if(code==='m-1') min.value=Math.max(0,(parseInt(min.value)||0)-1);
   if(code==='m+1') min.value=(parseInt(min.value)||0)+1;
-  if(code==='s-5') sec.value=((parseInt(sec.value)||0)-5+60)%60;
-  if(code==='s+5') sec.value=((parseInt(sec.value)||0)+5)%60;
+  if(code==='m-5') min.value=Math.max(1,(parseInt(min.value)||0)-5);
+  if(code==='m+5') min.value=(parseInt(min.value)||0)+5;
+  if(code==='s-5'&&sec) sec.value=((parseInt(sec.value)||0)-5+60)%60;
+  if(code==='s+5'&&sec) sec.value=((parseInt(sec.value)||0)+5)%60;
   document.querySelectorAll('.quick button').forEach(b=>b.classList.remove('on'));
 }
 
